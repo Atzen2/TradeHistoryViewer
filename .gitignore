@@ -1,0 +1,12 @@
+*.class
+build/
+.gradle
+target
+bin
+.classpath
+.project
+.settings
+.classpath
+.project
+resources/external/kraken/*.csv
+resources/internal/*.csv

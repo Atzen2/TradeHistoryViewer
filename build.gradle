@@ -1,0 +1,23 @@
+apply plugin: 'java'
+apply plugin: 'eclipse'
+apply plugin: 'application'
+
+
+repositories {
+
+    jcenter()
+    maven { url 'https://jitpack.io' }
+}
+
+
+dependencies {
+
+	compile 'com.github.Atzen2:textAreaWriter:v0.1.1'
+	compile 'com.github.Atzen2:easyCsvHandler:v0.3'
+	compile 'com.github.Atzen2:cryptoCompareAPI:v0.2'
+	
+	testCompile 'junit:junit:4.2'      
+}
+
+
+mainClassName = 'gui.Gui'
