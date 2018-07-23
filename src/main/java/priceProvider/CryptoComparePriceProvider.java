@@ -3,7 +3,7 @@ package priceProvider;
 import java.io.IOException;
 import java.util.Date;
 
-import externaDataInputs.ExternalDataCollector.AssetType;
+import dataTypes.Asset.AssetType;
 import me.joshmcfarlin.CryptoCompareAPI.Historic;
 import me.joshmcfarlin.CryptoCompareAPI.Historic.History;
 import me.joshmcfarlin.CryptoCompareAPI.Historic.History.Data;

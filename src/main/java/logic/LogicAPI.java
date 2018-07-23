@@ -4,7 +4,11 @@ package logic;
 import java.util.ArrayList;
 import java.util.List;
 
+import dataTypes.Asset;
+import dataTypes.Asset.AssetType;
+import dataTypes.Balance;
 import dataTypes.Deposit;
+import dataTypes.Price;
 import dataTypes.Trade;
 import dataTypes.TradingElement;
 import dataTypes.Withdrawal;
@@ -15,6 +19,7 @@ import externaDataInputs.KrakenCsvParser;
 import priceProvider.CryptoComparePriceProvider;
 import priceProvider.PriceProvider;
 import utils.DataProcessor;
+import utils.Viewer;
 
 public class LogicAPI {
 	
@@ -23,6 +28,7 @@ public class LogicAPI {
 	private static List<Deposit> depositList = new ArrayList<>();
 	private static List<Withdrawal> withdrawalList = new ArrayList<>();
 	private static List<TradingElement> tradingElementList = new ArrayList<>();
+	private static List<List<Balance>> balancesList = new ArrayList<>();
 	
 	private static PriceProvider priceProvider;
 	private static DataUI dataUI;
@@ -78,6 +84,22 @@ public class LogicAPI {
 	
 	public static void inputProcessedData() {
 		tradingElementList = dataUI.inputData();
+		tradingElementList = DataProcessor.sortTradingElements(tradingElementList);
+	}
+	
+	
+	
+	public static void createBalances() {
+		
+		for(int i = 0 ; i < tradingElementList.size() ; i++) {
+			List<Balance> inputBalances;
+			
+			if(i == 0) inputBalances = new ArrayList<>();
+			else inputBalances = new ArrayList<>(balancesList.get(i -1));
+			
+			balancesList.add(DataProcessor.getBalances(tradingElementList.get(i), inputBalances));
+		}
+		
 	}
 
 	
@@ -106,16 +128,23 @@ public class LogicAPI {
 	
 	
 	
+	public static List<List<Balance>> getBalances() {
+		return balancesList;
+	}
+	
+	
+	
 	
 	public static void main(String[] args) {
 		boolean externalData = false;
 		boolean dataInput = true;
 		
+		LogicAPI.addExternalDataCollector(new KrakenCsvParser());
+		LogicAPI.setDataUI(new DataCsvFileHandler());
+		LogicAPI.setPriceProvider(new CryptoComparePriceProvider());
+		
+
 		if(externalData) {
-			LogicAPI.addExternalDataCollector(new KrakenCsvParser());
-			LogicAPI.setPriceProvider(new CryptoComparePriceProvider());
-			LogicAPI.setDataUI(new DataCsvFileHandler());
-			
 			LogicAPI.collectExternalData();
 			LogicAPI.processExternalData();
 			
@@ -124,6 +153,8 @@ public class LogicAPI {
 		
 		if(dataInput) {
 			LogicAPI.inputProcessedData();
+			LogicAPI.createBalances();
+			Viewer.showBalances(LogicAPI.getBalances());
 		}
 		
 //		for(TradingElement element : LogicAPI.getTradingElements()) Viewer.showTradingElement(element);

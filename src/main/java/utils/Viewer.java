@@ -1,16 +1,20 @@
 package utils;
 
+import java.io.FileNotFoundException;
+import java.io.PrintWriter;
+import java.io.UnsupportedEncodingException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
 
+import dataTypes.Balance;
 import dataTypes.Deposit;
 import dataTypes.Trade;
 import dataTypes.TradingElement;
 import dataTypes.Withdrawal;
-import dataTypes.TradingElement.ElementType;
 
 public class Viewer {
 
@@ -104,6 +108,49 @@ public class Viewer {
 		}
 		
 		for(String e : elementList) System.out.println(columnHeader + ": " + e);
+	}
+	
+	
+	
+	public static void showBalances(List<List<Balance>> balances) {
+		
+		try {
+			PrintWriter writer = new PrintWriter("balances.txt", "UTF-8");
+		
+		
+			for(List<Balance> timepoint : balances) {
+				SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+				
+				output(writer, "##############################");
+				output(writer, "balances:");
+				output(writer, "date: " + format.format(timepoint.get(0).date));
+				output(writer, "");
+				
+				for (Balance balance : timepoint) {
+					
+					output(writer, "asset: " + balance.asset.type);
+					output(writer, "amount: " + balance.asset.amount + " " + balance.asset.type);
+					output(writer, "in fiat: " + balance.fiatValue.amount + " " + balance.fiatValue.type);
+					output(writer, "price: " + balance.priceToFiat.value + " " + balance.priceToFiat.base + "/" + balance.priceToFiat.quote);
+					output(writer, "");
+				}
+	
+				output(writer, "##############################");
+				output(writer, "");
+			}
+		
+			writer.close();
+		} catch (FileNotFoundException | UnsupportedEncodingException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+	}
+	
+
+	private static void output(PrintWriter writer, String message) {
+		System.out.println(message);
+		writer.println(message);
 	}
 	
 }

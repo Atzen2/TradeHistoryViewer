@@ -3,8 +3,8 @@ package dataTypes;
 import java.util.Date;
 
 public class Balance {
-	Asset asset;
-	Asset fiatValue;
-	Price priceToFiat;
-	Date time;
+	public Asset asset;
+	public Asset fiatValue;
+	public Price priceToFiat;
+	public Date date;
 }

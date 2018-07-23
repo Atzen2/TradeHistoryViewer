@@ -9,6 +9,7 @@ import java.util.Date;
 import java.util.List;
 
 import dataTypes.Asset;
+import dataTypes.Asset.AssetType;
 import dataTypes.Deposit;
 import dataTypes.Price;
 import dataTypes.Trade;

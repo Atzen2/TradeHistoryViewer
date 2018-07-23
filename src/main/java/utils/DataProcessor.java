@@ -7,12 +7,13 @@ import java.util.Date;
 import java.util.List;
 
 import dataTypes.Asset;
+import dataTypes.Asset.AssetType;
+import dataTypes.Balance;
 import dataTypes.Deposit;
 import dataTypes.Price;
 import dataTypes.Trade;
 import dataTypes.TradingElement;
 import dataTypes.Withdrawal;
-import externaDataInputs.ExternalDataCollector.AssetType;
 import priceProvider.PriceProvider;
 
 public class DataProcessor {
@@ -68,7 +69,7 @@ public class DataProcessor {
 		
 			@Override
 		    public int compare(TradingElement element1, TradingElement element2) {
-		        if (element1.getDate().getTime() <= element2.getDate().getTime()) return -1;
+		        if (element1.getDate().getTime() < element2.getDate().getTime()) return -1;
 		        else return 1;
 		    }
 		});
@@ -129,5 +130,216 @@ public class DataProcessor {
 		if(provider != null) return new Price(assetType, AssetType.EUR, provider.getPrice(exchange, assetType, AssetType.EUR, time));
 		return new Price(assetType, AssetType.EUR, 0); 
 	}
+	
+	
+	
+	public static boolean isSameAsset(Asset asset1, Asset asset2) {
+		if(asset1.amount == asset2.amount && asset1.type == asset2.type) return true;
+		return false;
+	}
+	
+	
+	
+	public static boolean isSamePrice(Price price1, Price price2) {
+		if(price1.value == price2.value && price1.base == price2.base && price1.quote == price2.quote) return true;
+		return false;
+	}
+	
+	
+	
+	public static boolean isSameTime(Date time1, Date time2) {
+		return time1.getTime() == time2.getTime() ? true : false;
+	}
+	
+	
+	
+	public static boolean isSameExchange(String exchange1, String exchange2) {
+		return exchange1.equals(exchange2) ? true : false;
+	}
 
+	
+	
+	public static List<AssetType> getAssetTypes(List<TradingElement> tradingElements) {
+		List<AssetType> assetTypeList = new ArrayList<>();
+		
+		
+		for(TradingElement element : tradingElements) {
+			switch (element.getType()) {
+			case TRADE:
+				Trade trade = (Trade) element;
+				
+				if(!assetTypeList.contains(trade.bought.type)) assetTypeList.add(trade.bought.type);
+				if(!assetTypeList.contains(trade.sold.type)) assetTypeList.add(trade.sold.type);
+				break;
+				
+			case DEPOSIT:
+				Deposit deposit = (Deposit) element;
+				
+				if(!assetTypeList.contains(deposit.asset.type)) assetTypeList.add(deposit.asset.type);
+				break;
+				
+			case WITHDRAWAL:
+				Withdrawal withdrawal = (Withdrawal) element;
+
+				if(!assetTypeList.contains(withdrawal.asset.type)) assetTypeList.add(withdrawal.asset.type);
+				break;
+
+			default:
+				break;
+			}
+		}
+		
+		return assetTypeList;
+	}
+	
+	
+	
+	public static List<Balance> getBalances(TradingElement tradingElement, List<Balance> initialBalances) {
+		List<Balance> balances = initialBalances;
+		List<Balance> newBalances = new ArrayList<>();
+
+		
+		Deposit deposit = null;
+		Trade trade = null;
+		Withdrawal withdrawal = null;
+		
+		Balance initBalance;
+		switch (tradingElement.getType()) {
+		case TRADE:
+			trade = (Trade) tradingElement;
+			
+			initBalance = new Balance();
+			initBalance.asset = new Asset(trade.bought.type, 0);
+			initBalance.fiatValue = new Asset(AssetType.EUR, 0);
+			initBalance.priceToFiat = new Price(AssetType.NONE, AssetType.NONE, 0);
+			balances = addIfNotExist(balances, initBalance);
+			
+			initBalance = new Balance();
+			initBalance.asset = new Asset(trade.sold.type, 0);
+			initBalance.fiatValue = new Asset(AssetType.EUR, 0);
+			initBalance.priceToFiat = new Price(AssetType.NONE, AssetType.NONE, 0);
+			balances = addIfNotExist(balances, initBalance);
+			
+			break;
+			
+		case DEPOSIT:
+			deposit = (Deposit) tradingElement;
+			
+			initBalance = new Balance();
+			initBalance.asset = new Asset(deposit.asset.type, 0);
+			initBalance.fiatValue = new Asset(AssetType.EUR, 0);
+			initBalance.priceToFiat = new Price(AssetType.NONE, AssetType.NONE, 0);
+			balances = addIfNotExist(balances, initBalance);
+
+			break;
+			
+		case WITHDRAWAL:
+			withdrawal = (Withdrawal) tradingElement;
+			
+			initBalance = new Balance();
+			initBalance.asset = new Asset(withdrawal.asset.type, 0);
+			initBalance.fiatValue = new Asset(AssetType.EUR, 0);
+			initBalance.priceToFiat = new Price(AssetType.NONE, AssetType.NONE, 0);
+			balances = addIfNotExist(balances, initBalance);
+
+			break;
+
+		default:
+			break;
+		}
+
+		
+		for(Balance balance : balances) {
+			boolean isAdded = false;
+			
+			if(deposit != null) {
+				if(balance.asset.type == deposit.asset.type) {
+					float amount = balance.asset.amount + deposit.asset.amount;
+					float fiat = amount * deposit.priceToFiat.value; 
+					
+					Balance newBalance = new Balance();
+					newBalance.asset = new Asset(balance.asset.type, amount);
+					newBalance.fiatValue = new Asset(balance.fiatValue.type, fiat);
+					newBalance.priceToFiat = deposit.priceToFiat;
+					newBalance.date = tradingElement.getDate();
+					
+					newBalances.add(newBalance);
+					isAdded = true;
+				}
+			}
+			
+			
+			if(withdrawal != null) {
+				if(balance.asset.type == withdrawal.asset.type) {
+					float amount = balance.asset.amount - withdrawal.asset.amount;
+					float fiat = amount * withdrawal.priceToFiat.value; 
+					
+					Balance newBalance = new Balance();
+					newBalance.asset = new Asset(balance.asset.type, amount);
+					newBalance.fiatValue = new Asset(balance.fiatValue.type, fiat);
+					newBalance.priceToFiat = withdrawal.priceToFiat;
+					newBalance.date = tradingElement.getDate();
+					
+					newBalances.add(newBalance);
+					isAdded = true;
+				}
+			}
+			
+			
+			if(trade != null) {
+				if(balance.asset.type == trade.bought.type) {
+					float amount = balance.asset.amount + trade.bought.amount;
+					float fiat = amount * trade.price.value * trade.priceToFiat.value; 
+					
+					Balance newBalance = new Balance();
+					newBalance.asset = new Asset(balance.asset.type, amount);
+					newBalance.fiatValue = new Asset(balance.fiatValue.type, fiat);
+					newBalance.priceToFiat = new Price(trade.price.base, trade.priceToFiat.quote, trade.price.value * trade.priceToFiat.value);
+					newBalance.date = tradingElement.getDate();
+					
+					newBalances.add(newBalance);
+					isAdded = true;
+				}
+				
+				if(balance.asset.type == trade.sold.type) {
+					float amount = balance.asset.amount - trade.sold.amount;
+					float fiat = amount * trade.priceToFiat.value; 
+					
+					Balance newBalance = new Balance();
+					newBalance.asset = new Asset(balance.asset.type, amount);
+					newBalance.fiatValue = new Asset(balance.fiatValue.type, fiat);
+					newBalance.priceToFiat = trade.priceToFiat;
+					newBalance.date = tradingElement.getDate();
+					
+					newBalances.add(newBalance);
+					isAdded = true;
+				}
+			}
+			
+			if(!isAdded) {
+				Balance newBalance = new Balance();
+				newBalance.asset = balance.asset;
+				newBalance.fiatValue = balance.fiatValue;
+				newBalance.priceToFiat = balance.priceToFiat;
+				newBalance.date = tradingElement.getDate();
+				
+				newBalances.add(newBalance);
+			}
+				
+		}
+		
+		return newBalances;
+	}
+	
+	
+	private static List<Balance> addIfNotExist(List<Balance> balances, Balance balance) {
+		
+		for(Balance b : balances) {
+			if(b.asset.type == balance.asset.type) return balances;
+		}
+		
+		balances.add(balance);
+		return balances;
+	}
+	
 }

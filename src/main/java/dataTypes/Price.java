@@ -1,6 +1,6 @@
 package dataTypes;
 
-import externaDataInputs.ExternalDataCollector.AssetType;
+import dataTypes.Asset.AssetType;
 
 public class Price {
 	public float value;
