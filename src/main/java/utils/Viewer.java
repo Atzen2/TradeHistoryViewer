@@ -50,7 +50,7 @@ public class Viewer {
 		System.out.println("exchange: " + deposit.exchange);
 		System.out.println("asset: " + deposit.asset.amount + " " + deposit.asset.type);
 		System.out.println("fee: " + deposit.fee.amount + " " + deposit.fee.type);
-		System.out.println("time: " + deposit.time);
+		System.out.println("time: " + deposit.timestamp);
 		System.out.println("\n\n");
 	}
 	
@@ -59,7 +59,7 @@ public class Viewer {
 		System.out.println("exchange: " + withdrawal.exchange);
 		System.out.println("asset: " + withdrawal.asset.amount + " " + withdrawal.asset.type);
 		System.out.println("fee: " + withdrawal.fee.amount + " " + withdrawal.fee.type);
-		System.out.println("time: " + withdrawal.time);
+		System.out.println("time: " + withdrawal.timestamp);
 		System.out.println("\n\n");
 	}
 	
@@ -70,7 +70,7 @@ public class Viewer {
 		System.out.println("sold: " + trade.sold.amount + " " + trade.sold.type);
 		System.out.println("fee: " + trade.fee.amount + " " + trade.fee.type);
 		System.out.println("price: " + trade.price.value + " " + trade.price.base + "/" + trade.price.quote);
-		System.out.println("time: " + trade.time);
+		System.out.println("time: " + trade.timestamp);
 		System.out.println("\n\n");
 	}
 	
@@ -123,7 +123,7 @@ public class Viewer {
 				
 				output(writer, "##############################");
 				output(writer, "balances:");
-				output(writer, "date: " + format.format(timepoint.get(0).date));
+				output(writer, "date: " + format.format(timepoint.get(0).timestamp));
 				output(writer, "");
 				
 				for (Balance balance : timepoint) {

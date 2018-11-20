@@ -1,13 +1,13 @@
 package dataTypes;
 
-import java.util.Date;
+import dataTypes.Asset.AssetType;
 
 public class Deposit implements TradingElement{
-	public Date time;
-	public Asset asset;
-	public Asset fee;
+	public long timestamp = 0;
+	public Asset asset = new Asset(AssetType.NONE, 0);
+	public Asset fee = new Asset(AssetType.NONE, 0);
 	public String exchange ="none";
-	public Price priceToFiat;
+	public Price priceToFiat = new Price(AssetType.NONE, AssetType.NONE, 0);
 
 	
 	
@@ -15,8 +15,8 @@ public class Deposit implements TradingElement{
 
 	
 	@Override
-	public Date getDate() {
-		return time;
+	public long getTimestamp() {
+		return timestamp;
 	}
 
 	

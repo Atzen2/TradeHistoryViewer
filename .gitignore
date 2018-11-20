@@ -9,4 +9,8 @@ bin
 .classpath
 .project
 resources/external/kraken/*.csv
+resources/external/hitbtc/*.csv
+resources/external/bitcoin.de/*.csv
+resources/external/bitfinex/*.csv
+resources/external/manual/*.csv
 resources/internal/*.csv

@@ -14,7 +14,7 @@ dependencies {
 
 	compile 'com.github.Atzen2:textAreaWriter:v0.1.1'
 	compile 'com.github.Atzen2:easyCsvHandler:v0.3'
-	compile 'com.github.Atzen2:cryptoCompareAPI:v0.2'
+	compile 'com.github.Atzen2:cryptoCompareAPI:v0.3'
 	
 	testCompile 'junit:junit:4.2'      
 }

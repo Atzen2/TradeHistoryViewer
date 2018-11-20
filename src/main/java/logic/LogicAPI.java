@@ -4,22 +4,15 @@ package logic;
 import java.util.ArrayList;
 import java.util.List;
 
-import dataTypes.Asset;
-import dataTypes.Asset.AssetType;
 import dataTypes.Balance;
 import dataTypes.Deposit;
-import dataTypes.Price;
 import dataTypes.Trade;
 import dataTypes.TradingElement;
 import dataTypes.Withdrawal;
-import dataUI.DataCsvFileHandler;
 import dataUI.DataUI;
 import externaDataInputs.ExternalDataCollector;
-import externaDataInputs.KrakenCsvParser;
-import priceProvider.CryptoComparePriceProvider;
 import priceProvider.PriceProvider;
 import utils.DataProcessor;
-import utils.Viewer;
 
 public class LogicAPI {
 	
@@ -132,36 +125,4 @@ public class LogicAPI {
 		return balancesList;
 	}
 	
-	
-	
-	
-	public static void main(String[] args) {
-		boolean externalData = false;
-		boolean dataInput = true;
-		
-		LogicAPI.addExternalDataCollector(new KrakenCsvParser());
-		LogicAPI.setDataUI(new DataCsvFileHandler());
-		LogicAPI.setPriceProvider(new CryptoComparePriceProvider());
-		
-
-		if(externalData) {
-			LogicAPI.collectExternalData();
-			LogicAPI.processExternalData();
-			
-			LogicAPI.outputProcessedData();
-		}
-		
-		if(dataInput) {
-			LogicAPI.inputProcessedData();
-			LogicAPI.createBalances();
-			Viewer.showBalances(LogicAPI.getBalances());
-		}
-		
-//		for(TradingElement element : LogicAPI.getTradingElements()) Viewer.showTradingElement(element);
-		
-//		Trade trade = LogicAPI.getTrades().get(0);
-//		System.out.println("Price: " + ccPriceProvider.getPrice(trade.exchange, trade.price.quote, AssetType.EUR, trade.time));
-		
-		
-	}
 }

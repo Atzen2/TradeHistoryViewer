@@ -1,10 +1,12 @@
 package dataUI;
 
 import java.io.IOException;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 import dataTypes.Asset;
@@ -51,14 +53,8 @@ public class DataCsvFileHandler extends EasyCsvHandler implements DataUI {
 	
 	private final String DEFAULT_STRING = "-";
 	
-	private final SimpleDateFormat dateFotmat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+	private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 	 
-	
-	
-	
-	public DataCsvFileHandler() {
-		
-	}
 	
 	
 	private void getHeaderIndexes(String[] header) {
@@ -116,7 +112,7 @@ public class DataCsvFileHandler extends EasyCsvHandler implements DataUI {
 		String[] record = new String[NUMOFHEADERELEMENTS];
 
 		
-		record[TIME_INDEX] = convertDateToString(trade.time);
+		record[TIME_INDEX] = convertTimestampToDate(trade.timestamp);
 		record[TYPE_INDEX] = TYPE_TRADE;
 		record[EXCHANGE_INDEX] = trade.exchange;
 		record[ASSET_INDEX] = DEFAULT_STRING;
@@ -125,16 +121,16 @@ public class DataCsvFileHandler extends EasyCsvHandler implements DataUI {
 		record[PRICE_INDEX] = constructPriceString(trade.price);
 		record[FEE_INDEX] = constructAssetString(trade.fee);
 		record[FIAT_INDEX] = constructPriceString(trade.priceToFiat);
-		
+
 		return record;
 	}
 	
-	private String convertDateToString(Date date) {
-		return dateFotmat.format(date);
+	private String convertTimestampToDate(long timestamp) {
+		return formatter.format(ZonedDateTime.ofInstant(Instant.ofEpochSecond(timestamp), ZoneId.systemDefault()));
 	}
 	
 	private String constructAssetString(Asset asset) {
-		return asset.amount + " " + asset.type;
+		return asset.type == AssetType.NONE ? DEFAULT_STRING : asset.amount + " " + asset.type;
 	}
 	
 	private String constructPriceString(Price price) {
@@ -144,7 +140,7 @@ public class DataCsvFileHandler extends EasyCsvHandler implements DataUI {
 	private String[] createDepositRecord(Deposit deposit) {
 		String[] record = new String[NUMOFHEADERELEMENTS];
 		
-		record[TIME_INDEX] = convertDateToString(deposit.time);
+		record[TIME_INDEX] = convertTimestampToDate(deposit.timestamp);
 		record[TYPE_INDEX] = TYPE_DEPOSIT;
 		record[EXCHANGE_INDEX] = deposit.exchange;
 		record[ASSET_INDEX] = constructAssetString(deposit.asset); 
@@ -160,7 +156,7 @@ public class DataCsvFileHandler extends EasyCsvHandler implements DataUI {
 	private String[] createWithdrawalRecord(Withdrawal withdrawal) {
 		String[] record = new String[NUMOFHEADERELEMENTS];
 		
-		record[TIME_INDEX] = convertDateToString(withdrawal.time);
+		record[TIME_INDEX] = convertTimestampToDate(withdrawal.timestamp);
 		record[TYPE_INDEX] = TYPE_WITHDRAWAL;
 		record[EXCHANGE_INDEX] = withdrawal.exchange;
 		record[ASSET_INDEX] = constructAssetString(withdrawal.asset); 
@@ -216,30 +212,27 @@ public class DataCsvFileHandler extends EasyCsvHandler implements DataUI {
 	private Trade createTrade(String[] record) {
 		Trade trade = new Trade();
 		
-		trade.time = convertStringToDate(record[TIME_INDEX]);
+		trade.timestamp = convertDateToTimestamp(record[TIME_INDEX]);
 		trade.exchange = record[EXCHANGE_INDEX];
 		trade.bought = parseAsset(record[BOUGHT_INDEX]);
 		trade.sold = parseAsset(record[SOLD_INDEX]);
 		trade.price = parsePrice(record[PRICE_INDEX]);
 		trade.fee = parseAsset(record[FEE_INDEX]);
 		trade.priceToFiat = parsePrice(record[FIAT_INDEX]);
-		
+
 		return trade;
 	}
 	
-	private Date convertStringToDate(String date) {
-		try {
-			return dateFotmat.parse(date);
-		} catch (ParseException e) {
-			e.printStackTrace();
-			return null;
-		}
+	private long convertDateToTimestamp(String date) {
+		return ZonedDateTime.of(LocalDateTime.parse(date, formatter), ZoneId.systemDefault()).toEpochSecond();
 	}
 	
 	private Asset parseAsset(String assetString) {
+		if(assetString.equals(DEFAULT_STRING)) return new Asset(AssetType.NONE, 0);
+
 		// String format: "amount type"
 		String[] splittedString = assetString.split(" ");
-	
+		
 		float amount = Float.parseFloat(splittedString[0]);
 		AssetType type = Asset.convertStringToAssetType(splittedString[1]);
 		
@@ -261,7 +254,7 @@ public class DataCsvFileHandler extends EasyCsvHandler implements DataUI {
 	private Deposit createDeposit(String[] record) {
 		Deposit deposit = new Deposit();
 		
-		deposit.time = convertStringToDate(record[TIME_INDEX]);
+		deposit.timestamp = convertDateToTimestamp(record[TIME_INDEX]);
 		deposit.exchange = record[EXCHANGE_INDEX];
 		deposit.asset = parseAsset(record[ASSET_INDEX]);
 		deposit.fee = parseAsset(record[FEE_INDEX]);
@@ -273,7 +266,7 @@ public class DataCsvFileHandler extends EasyCsvHandler implements DataUI {
 	private Withdrawal createWithdrawal(String[] record) {
 		Withdrawal withdrawal = new Withdrawal();
 		
-		withdrawal.time = convertStringToDate(record[TIME_INDEX]);
+		withdrawal.timestamp = convertDateToTimestamp(record[TIME_INDEX]);
 		withdrawal.exchange = record[EXCHANGE_INDEX];
 		withdrawal.asset = parseAsset(record[ASSET_INDEX]);
 		withdrawal.fee = parseAsset(record[FEE_INDEX]);

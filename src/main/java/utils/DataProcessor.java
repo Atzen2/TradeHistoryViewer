@@ -22,17 +22,12 @@ public class DataProcessor {
 	
 	public static List<Trade> mergeTrades(List<Trade> trades, long timeWindow) {
 		List<Trade> mergedList = new ArrayList<>();
-		
-		Asset dummyAsset = new Asset(AssetType.NONE, 0.0f);
 		Trade lastTrade = new Trade();
-		lastTrade.time = new Date();
-		lastTrade.bought = dummyAsset;
-		lastTrade.sold = dummyAsset;
 		
 		
 		for(Trade currentTrade : trades) {
 		
-			if(isInTimeWindow(currentTrade.time.getTime(), lastTrade.time.getTime(), timeWindow) &&
+			if(isInTimeWindow(currentTrade.timestamp, lastTrade.timestamp, timeWindow) &&
 			   isSameTradeType(currentTrade, lastTrade)) { // merge trade
 				
 				lastTrade.bought.amount += currentTrade.bought.amount;
@@ -69,7 +64,7 @@ public class DataProcessor {
 		
 			@Override
 		    public int compare(TradingElement element1, TradingElement element2) {
-		        if (element1.getDate().getTime() < element2.getDate().getTime()) return -1;
+		        if (element1.getTimestamp() < element2.getTimestamp()) return -1;
 		        else return 1;
 		    }
 		});
@@ -90,7 +85,7 @@ public class DataProcessor {
 				
 				if(isFiat(trade.price.quote)) trade.priceToFiat = trade.price;
 				else if(isFiat(trade.price.base)) trade.priceToFiat = new Price(trade.price.quote, trade.price.base, (1 / trade.price.value));
-				else trade.priceToFiat = getFiatPrice(provider, trade.exchange, trade.sold.type, trade.time);
+				else trade.priceToFiat = getFiatPrice(provider, trade.exchange, trade.sold.type, trade.timestamp);
 				
 				tradingElements.add(trade);
 				break;
@@ -99,7 +94,7 @@ public class DataProcessor {
 				Deposit deposit = (Deposit) element;
 				
 				if(isFiat(deposit.asset.type)) deposit.priceToFiat = new Price(AssetType.EUR, AssetType.EUR, 1);
-				else deposit.priceToFiat = getFiatPrice(provider, deposit.exchange, deposit.asset.type, deposit.time);
+				else deposit.priceToFiat = getFiatPrice(provider, deposit.exchange, deposit.asset.type, deposit.timestamp);
 				
 				tradingElements.add(deposit);
 				break;
@@ -108,7 +103,7 @@ public class DataProcessor {
 				Withdrawal withdrawal = (Withdrawal) element;
 				
 				if(isFiat(withdrawal.asset.type)) withdrawal.priceToFiat = new Price(AssetType.EUR, AssetType.EUR, 1);
-				else withdrawal.priceToFiat = getFiatPrice(provider, withdrawal.exchange, withdrawal.asset.type, withdrawal.time);
+				else withdrawal.priceToFiat = getFiatPrice(provider, withdrawal.exchange, withdrawal.asset.type, withdrawal.timestamp);
 				
 				tradingElements.add(withdrawal);
 				break;
@@ -126,8 +121,8 @@ public class DataProcessor {
 		return assetType == AssetType.EUR;
 	}
 	
-	private static Price getFiatPrice(PriceProvider provider, String exchange, AssetType assetType, Date time) {
-		if(provider != null) return new Price(assetType, AssetType.EUR, provider.getPrice(exchange, assetType, AssetType.EUR, time));
+	private static Price getFiatPrice(PriceProvider provider, String exchange, AssetType assetType, long timestamp) {
+		if(provider != null) return new Price(assetType, AssetType.EUR, provider.getPrice(exchange, assetType, AssetType.EUR, timestamp));
 		return new Price(assetType, AssetType.EUR, 0); 
 	}
 	
@@ -261,7 +256,7 @@ public class DataProcessor {
 					newBalance.asset = new Asset(balance.asset.type, amount);
 					newBalance.fiatValue = new Asset(balance.fiatValue.type, fiat);
 					newBalance.priceToFiat = deposit.priceToFiat;
-					newBalance.date = tradingElement.getDate();
+					newBalance.timestamp = tradingElement.getTimestamp();
 					
 					newBalances.add(newBalance);
 					isAdded = true;
@@ -278,7 +273,7 @@ public class DataProcessor {
 					newBalance.asset = new Asset(balance.asset.type, amount);
 					newBalance.fiatValue = new Asset(balance.fiatValue.type, fiat);
 					newBalance.priceToFiat = withdrawal.priceToFiat;
-					newBalance.date = tradingElement.getDate();
+					newBalance.timestamp = tradingElement.getTimestamp();
 					
 					newBalances.add(newBalance);
 					isAdded = true;
@@ -295,7 +290,7 @@ public class DataProcessor {
 					newBalance.asset = new Asset(balance.asset.type, amount);
 					newBalance.fiatValue = new Asset(balance.fiatValue.type, fiat);
 					newBalance.priceToFiat = new Price(trade.price.base, trade.priceToFiat.quote, trade.price.value * trade.priceToFiat.value);
-					newBalance.date = tradingElement.getDate();
+					newBalance.timestamp = tradingElement.getTimestamp();
 					
 					newBalances.add(newBalance);
 					isAdded = true;
@@ -309,7 +304,7 @@ public class DataProcessor {
 					newBalance.asset = new Asset(balance.asset.type, amount);
 					newBalance.fiatValue = new Asset(balance.fiatValue.type, fiat);
 					newBalance.priceToFiat = trade.priceToFiat;
-					newBalance.date = tradingElement.getDate();
+					newBalance.timestamp = tradingElement.getTimestamp();
 					
 					newBalances.add(newBalance);
 					isAdded = true;
@@ -321,7 +316,7 @@ public class DataProcessor {
 				newBalance.asset = balance.asset;
 				newBalance.fiatValue = balance.fiatValue;
 				newBalance.priceToFiat = balance.priceToFiat;
-				newBalance.date = tradingElement.getDate();
+				newBalance.timestamp = tradingElement.getTimestamp();
 				
 				newBalances.add(newBalance);
 			}
@@ -341,5 +336,4 @@ public class DataProcessor {
 		balances.add(balance);
 		return balances;
 	}
-	
 }

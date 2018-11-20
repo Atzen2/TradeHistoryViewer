@@ -1,11 +1,10 @@
 package externaDataInputs;
 
 import java.io.IOException;
-import java.text.DateFormat;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 import dataTypes.Asset;
@@ -21,9 +20,6 @@ public class KrakenCsvParser extends EasyCsvHandler implements ExternalDataColle
 	
 
 	private final String CSV_FILE_PATH = "./resources/external/kraken/ledgers.csv";
-//	private final String CSV_FILE_PATH = "./resources/external/kraken/ledger.csv";
-//	private final String CSV_FILE_PATH = "./resources/external/kraken/ledger_cumFeeTest.csv";
-//	private final String CSV_FILE_PATH = "./resources/external/kraken/ledger_diffFeeTest.csv";
 	
 	private final String EXCHANGE_NAME = "kraken";
 	
@@ -63,20 +59,6 @@ public class KrakenCsvParser extends EasyCsvHandler implements ExternalDataColle
 
 	
 	
-	private Date setDate(String time) {
-		DateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-		
-		try {
-			return format.parse(time);
-		} catch (ParseException e) {
-			e.printStackTrace();
-		}
-		
-		return null;
-	}
-	
-	
-	
 	@Override
 	public void collectInputData() {
 		
@@ -104,9 +86,7 @@ public class KrakenCsvParser extends EasyCsvHandler implements ExternalDataColle
 						if(createTrade(record)) {
 							calculatePrice();
 							
-							if(isFeePayedInBoughtAsset()) {
-								convertFeeToSoldAsset();
-							}
+							if(isFeePayedInBoughtAsset()) convertFeeToSoldAsset();
 							
 							tradeList.add(trade);
 						}
@@ -123,25 +103,30 @@ public class KrakenCsvParser extends EasyCsvHandler implements ExternalDataColle
 	
 	
 	private void setHeaderIndexes(EasyCsvFile csvFile) {
-		TXID_INDEX= getHeaderIndex(csvFile, TXID);
-		REFID_INDEX= getHeaderIndex(csvFile, REFID);
-		TIME_INDEX= getHeaderIndex(csvFile, TIME);
-		TYPE_INDEX= getHeaderIndex(csvFile, TYPE);
-		ACLASS_INDEX= getHeaderIndex(csvFile, ACLASS);
-		ASSET_INDEX= getHeaderIndex(csvFile, ASSET);
-		AMOUNT_INDEX= getHeaderIndex(csvFile, AMOUNT);
-		FEE_INDEX= getHeaderIndex(csvFile, FEE);
-		BALANCE_INDEX= getHeaderIndex(csvFile, BALANCE);
+		TXID_INDEX = getHeaderIndex(csvFile, TXID);
+		REFID_INDEX = getHeaderIndex(csvFile, REFID);
+		TIME_INDEX = getHeaderIndex(csvFile, TIME);
+		TYPE_INDEX = getHeaderIndex(csvFile, TYPE);
+		ACLASS_INDEX = getHeaderIndex(csvFile, ACLASS);
+		ASSET_INDEX = getHeaderIndex(csvFile, ASSET);
+		AMOUNT_INDEX = getHeaderIndex(csvFile, AMOUNT);
+		FEE_INDEX = getHeaderIndex(csvFile, FEE);
+		BALANCE_INDEX = getHeaderIndex(csvFile, BALANCE);
 	}
 	
 	private Deposit createDeposit(String[] record) {
 		Deposit deposit = new Deposit();
 		deposit.asset = new Asset(getAssetType(record[ASSET_INDEX]), Float.parseFloat(record[AMOUNT_INDEX]));
 		deposit.fee = new Asset(getAssetType(record[ASSET_INDEX]), Float.parseFloat(record[FEE_INDEX]));
-		deposit.time = setDate(record[TIME_INDEX]);
+		deposit.timestamp = convertDateToTimestamp(record[TIME_INDEX]);
 		deposit.exchange = EXCHANGE_NAME;
 		
 		return deposit;
+	}
+	
+	private long convertDateToTimestamp(String date) {
+		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+		return LocalDateTime.parse(date, formatter).toInstant(ZoneOffset.UTC).getEpochSecond();
 	}
 	
 	private AssetType getAssetType(String assetType) {
@@ -164,7 +149,7 @@ public class KrakenCsvParser extends EasyCsvHandler implements ExternalDataColle
 		Withdrawal withdrawal = new Withdrawal();
 		withdrawal.asset = new Asset(getAssetType(record[ASSET_INDEX]), -Float.parseFloat(record[AMOUNT_INDEX]));
 		withdrawal.fee = new Asset(getAssetType(record[ASSET_INDEX]), Float.parseFloat(record[FEE_INDEX]));
-		withdrawal.time = setDate(record[TIME_INDEX]);
+		withdrawal.timestamp = convertDateToTimestamp(record[TIME_INDEX]);
 		withdrawal.exchange = EXCHANGE_NAME;
 		
 		return withdrawal;
@@ -175,7 +160,7 @@ public class KrakenCsvParser extends EasyCsvHandler implements ExternalDataColle
 		boolean isTradeParsed = false;
 		
 		
-		Date time = setDate(record[TIME_INDEX]);
+		long time = convertDateToTimestamp(record[TIME_INDEX]);
 		Asset asset = new Asset(getAssetType(record[ASSET_INDEX]), Float.parseFloat(record[AMOUNT_INDEX]));
 		Asset fee = new Asset(getAssetType(record[ASSET_INDEX]), Float.parseFloat(record[FEE_INDEX]));
 		
@@ -191,7 +176,7 @@ public class KrakenCsvParser extends EasyCsvHandler implements ExternalDataColle
 		
 		} else { // same trade
 		
-			trade.time = time;
+			trade.timestamp = time;
 			isTradeParsed = true;
 		}
 			
@@ -203,7 +188,7 @@ public class KrakenCsvParser extends EasyCsvHandler implements ExternalDataColle
 			
 		} else { // sold
 			
-			asset.amount *= -1;
+			asset.amount = Math.abs(asset.amount);
 			trade.sold = asset;
 			if(fee.amount > 0) trade.fee = fee;
 

@@ -11,34 +11,46 @@ import me.joshmcfarlin.CryptoCompareAPI.Utils.OutOfCallsException;
 
 public class CryptoComparePriceProvider implements PriceProvider{
 
-	private final long HOUR = 3600*1000;
-	int cnt = 0;
+	private final long HOUR = 3600;
+	
+	
 	
 	@Override
-	public float getPrice(String exchange, AssetType base, AssetType quote, Date time) {
+	public float getPrice(String exchange, AssetType base, AssetType quote, long timestamp) {
+		return getPriceInternal(exchange, base, quote, timestamp, false);
+	}
+	
+	
+	private float getPriceInternal(String exchange, AssetType base, AssetType quote, long time, boolean backup) {
 		float price = 0;
-		int timestamp = convertMillisecondsToSeconds(setToNextHour(time.getTime()));
+		int timestamp = (int) setToNextHour(time);
 		
 		try {
-			
-			History history = Historic.getHour(base.toString(), quote.toString(), 1, timestamp, exchange);
+			History history;
+
+
+			if(backup) history = Historic.getHour(base.toString(), quote.toString(), 1, timestamp);
+			else history = Historic.getHour(base.toString(), quote.toString(), 1, timestamp, exchange);
+
+			System.out.println("got fiat price for " + base + " date: " + new Date(time * 1000) + (backup ? "(backup)" : ""));
+			Thread.sleep(210);
+
+			if(history.response.contains("Error") || history.data.get(0).high == 0 && history.data.get(0).low == 0) {
+				if(backup) return 0;
+				else return getPriceInternal(exchange, base, quote, time, true);
+			}
+
+
 			Data data = history.data.get(history.data.size() - 1);
 			price = (float) ((data.high + data.low) / 2);
-			
-			Thread.sleep(210);
-			System.out.println("got price " + cnt++ + " " + time);
-			
+
+
 		} catch (IOException | OutOfCallsException | InterruptedException e) {
 			e.printStackTrace();
 			price = 0;
 		}
-		
+
 		return price;
-	}
-	
-	
-	private int convertMillisecondsToSeconds(long timestamp) {
-		return (int) (timestamp / 1000);
 	}
 	
 	private long setToNextHour(long timestamp) {
